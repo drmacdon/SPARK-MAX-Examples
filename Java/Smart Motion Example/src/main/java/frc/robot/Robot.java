@@ -160,100 +160,135 @@ public class Robot extends TimedRobot {
 
     // button to toggle between velocity and smart motion modes
     SmartDashboard.putBoolean("Mode", true);
+
+    SmartDashboard.putBoolean("RUN", false);
   }
 
   @Override
   public void teleopPeriodic() {
-    // read PID coefficients from SmartDashboard
-    double p = SmartDashboard.getNumber("P Gain", 0);
-    double i = SmartDashboard.getNumber("I Gain", 0);
-    double d = SmartDashboard.getNumber("D Gain", 0);
-    double iz = SmartDashboard.getNumber("I Zone", 0);
-    double ff = SmartDashboard.getNumber("Feed Forward", 0);
-    double max = SmartDashboard.getNumber("Max Output", 0);
-    double min = SmartDashboard.getNumber("Min Output", 0);
-    double maxV = SmartDashboard.getNumber("Max Velocity", 0);
-    double minV = SmartDashboard.getNumber("Min Velocity", 0);
-    double maxA = SmartDashboard.getNumber("Max Acceleration", 0);
-    double allE = SmartDashboard.getNumber("Allowed Closed Loop Error", 0);
-
-    int currentLimit = (int)SmartDashboard.getNumber("Motor Smart Current Limit", 20);
-    double posConvFactor = SmartDashboard.getNumber("Position Conversion Factor", 1);
-    double velConvFactor = SmartDashboard.getNumber("Velocity Conversion Factor", 1);
-    boolean dashEnableForward = SmartDashboard.getBoolean("Enable Forward Limit", true);
-    boolean dashEnableBackward = SmartDashboard.getBoolean("Enable Backward Limit", true);
-    float dashForwardLimit = (float)SmartDashboard.getNumber("Forward Limit", 0.1f);
-    float dashBackwardLimit = (float)SmartDashboard.getNumber("Backward Limit", 0.0f);
-
-    if (currentLimit != smartCurrentLimit) {
-      m_motor.setSmartCurrentLimit(currentLimit);
-      smartCurrentLimit = currentLimit;
-    }
-
-    if (posConvFactor != positionConversionFactor) {
-      m_encoder.setPositionConversionFactor(posConvFactor);
-      positionConversionFactor = posConvFactor;
-    }
-
-    if (velConvFactor != velocityConversionFactor) {
-      m_encoder.setVelocityConversionFactor(velConvFactor);
-      velocityConversionFactor = velConvFactor;
-    }
-
-    if (dashEnableForward != enableForwardLimit) {
-      m_motor.enableSoftLimit(CANSparkMax.SoftLimitDirection.kForward, dashEnableForward);
-      enableForwardLimit = dashEnableForward;
-    }
-
-    if (dashEnableBackward != enableBackwardLimit) {
-      m_motor.enableSoftLimit(CANSparkMax.SoftLimitDirection.kReverse, dashEnableBackward);
-      enableBackwardLimit = dashEnableBackward;
-    }
-
-    if (dashForwardLimit != forwardLimit) {
-      m_motor.setSoftLimit(CANSparkMax.SoftLimitDirection.kForward, dashForwardLimit);
-      forwardLimit = dashForwardLimit;
-    }
-
-    if (dashBackwardLimit != backwardLimit) {
-      m_motor.setSoftLimit(CANSparkMax.SoftLimitDirection.kReverse, dashBackwardLimit);
-      backwardLimit = dashBackwardLimit;
-    }
-
-    // if PID coefficients on SmartDashboard have changed, write new values to controller
-    if((p != kP)) { m_pidController.setP(p); kP = p; }
-    if((i != kI)) { m_pidController.setI(i); kI = i; }
-    if((d != kD)) { m_pidController.setD(d); kD = d; }
-    if((iz != kIz)) { m_pidController.setIZone(iz); kIz = iz; }
-    if((ff != kFF)) { m_pidController.setFF(ff); kFF = ff; }
-    if((max != kMaxOutput) || (min != kMinOutput)) { 
-      m_pidController.setOutputRange(min, max); 
-      kMinOutput = min; kMaxOutput = max; 
-    }
-    if((maxV != maxVel)) { m_pidController.setSmartMotionMaxVelocity(maxV,0); maxVel = maxV; }
-    if((minV != minVel)) { m_pidController.setSmartMotionMinOutputVelocity(minV,0); minVel = minV; }
-    if((maxA != maxAcc)) { m_pidController.setSmartMotionMaxAccel(maxA,0); maxAcc = maxA; }
-    if((allE != allowedErr)) { m_pidController.setSmartMotionAllowedClosedLoopError(allE,0); allowedErr = allE; }
-
-    double setPoint, processVariable;
-    boolean mode = SmartDashboard.getBoolean("Mode", false);
-    if(mode) {
-      setPoint = SmartDashboard.getNumber("Set Velocity", 0);
-      m_pidController.setReference(setPoint, CANSparkMax.ControlType.kVelocity);
-      processVariable = m_encoder.getVelocity();
+    boolean run = SmartDashboard.getBoolean("RUN", false);
+    if (!run) {
+      m_motor.stopMotor();
     } else {
-      setPoint = SmartDashboard.getNumber("Set Position", 0);
-      /**
-       * As with other PID modes, Smart Motion is set by calling the
-       * setReference method on an existing pid object and setting
-       * the control type to kSmartMotion
-       */
-      m_pidController.setReference(setPoint, CANSparkMax.ControlType.kSmartMotion);
-      processVariable = m_encoder.getPosition();
+      // read PID coefficients from SmartDashboard
+      double p = SmartDashboard.getNumber("P Gain", 0);
+      double i = SmartDashboard.getNumber("I Gain", 0);
+      double d = SmartDashboard.getNumber("D Gain", 0);
+      double iz = SmartDashboard.getNumber("I Zone", 0);
+      double ff = SmartDashboard.getNumber("Feed Forward", 0);
+      double max = SmartDashboard.getNumber("Max Output", 0);
+      double min = SmartDashboard.getNumber("Min Output", 0);
+      double maxV = SmartDashboard.getNumber("Max Velocity", 0);
+      double minV = SmartDashboard.getNumber("Min Velocity", 0);
+      double maxA = SmartDashboard.getNumber("Max Acceleration", 0);
+      double allE = SmartDashboard.getNumber("Allowed Closed Loop Error", 0);
+
+      int currentLimit = (int) SmartDashboard.getNumber("Motor Smart Current Limit", 20);
+      double posConvFactor = SmartDashboard.getNumber("Position Conversion Factor", 1);
+      double velConvFactor = SmartDashboard.getNumber("Velocity Conversion Factor", 1);
+      boolean dashEnableForward = SmartDashboard.getBoolean("Enable Forward Limit", true);
+      boolean dashEnableBackward = SmartDashboard.getBoolean("Enable Backward Limit", true);
+      float dashForwardLimit = (float) SmartDashboard.getNumber("Forward Limit", 0.1f);
+      float dashBackwardLimit = (float) SmartDashboard.getNumber("Backward Limit", 0.0f);
+
+      if (currentLimit != smartCurrentLimit) {
+        m_motor.setSmartCurrentLimit(currentLimit);
+        smartCurrentLimit = currentLimit;
+      }
+
+      if (posConvFactor != positionConversionFactor) {
+        m_encoder.setPositionConversionFactor(posConvFactor);
+        positionConversionFactor = posConvFactor;
+      }
+
+      if (velConvFactor != velocityConversionFactor) {
+        m_encoder.setVelocityConversionFactor(velConvFactor);
+        velocityConversionFactor = velConvFactor;
+      }
+
+      if (dashEnableForward != enableForwardLimit) {
+        m_motor.enableSoftLimit(CANSparkMax.SoftLimitDirection.kForward, dashEnableForward);
+        enableForwardLimit = dashEnableForward;
+      }
+
+      if (dashEnableBackward != enableBackwardLimit) {
+        m_motor.enableSoftLimit(CANSparkMax.SoftLimitDirection.kReverse, dashEnableBackward);
+        enableBackwardLimit = dashEnableBackward;
+      }
+
+      if (dashForwardLimit != forwardLimit) {
+        m_motor.setSoftLimit(CANSparkMax.SoftLimitDirection.kForward, dashForwardLimit);
+        forwardLimit = dashForwardLimit;
+      }
+
+      if (dashBackwardLimit != backwardLimit) {
+        m_motor.setSoftLimit(CANSparkMax.SoftLimitDirection.kReverse, dashBackwardLimit);
+        backwardLimit = dashBackwardLimit;
+      }
+
+      // if PID coefficients on SmartDashboard have changed, write new values to controller
+      if ((p != kP)) {
+        m_pidController.setP(p);
+        kP = p;
+      }
+      if ((i != kI)) {
+        m_pidController.setI(i);
+        kI = i;
+      }
+      if ((d != kD)) {
+        m_pidController.setD(d);
+        kD = d;
+      }
+      if ((iz != kIz)) {
+        m_pidController.setIZone(iz);
+        kIz = iz;
+      }
+      if ((ff != kFF)) {
+        m_pidController.setFF(ff);
+        kFF = ff;
+      }
+      if ((max != kMaxOutput) || (min != kMinOutput)) {
+        m_pidController.setOutputRange(min, max);
+        kMinOutput = min;
+        kMaxOutput = max;
+      }
+      if ((maxV != maxVel)) {
+        m_pidController.setSmartMotionMaxVelocity(maxV, 0);
+        maxVel = maxV;
+      }
+      if ((minV != minVel)) {
+        m_pidController.setSmartMotionMinOutputVelocity(minV, 0);
+        minVel = minV;
+      }
+      if ((maxA != maxAcc)) {
+        m_pidController.setSmartMotionMaxAccel(maxA, 0);
+        maxAcc = maxA;
+      }
+      if ((allE != allowedErr)) {
+        m_pidController.setSmartMotionAllowedClosedLoopError(allE, 0);
+        allowedErr = allE;
+      }
+
+      double setPoint, processVariable;
+      boolean mode = SmartDashboard.getBoolean("Mode", false);
+      if (mode) {
+        setPoint = SmartDashboard.getNumber("Set Velocity", 0);
+        m_pidController.setReference(setPoint, CANSparkMax.ControlType.kVelocity);
+        processVariable = m_encoder.getVelocity();
+      } else {
+        setPoint = SmartDashboard.getNumber("Set Position", 0);
+        /**
+         * As with other PID modes, Smart Motion is set by calling the
+         * setReference method on an existing pid object and setting
+         * the control type to kSmartMotion
+         */
+        m_pidController.setReference(setPoint, CANSparkMax.ControlType.kSmartMotion);
+        processVariable = m_encoder.getPosition();
+      }
+
+      SmartDashboard.putNumber("SetPoint", setPoint);
+      SmartDashboard.putNumber("Process Variable", processVariable);
+      SmartDashboard.putNumber("Output", m_motor.getAppliedOutput());
     }
-    
-    SmartDashboard.putNumber("SetPoint", setPoint);
-    SmartDashboard.putNumber("Process Variable", processVariable);
-    SmartDashboard.putNumber("Output", m_motor.getAppliedOutput());
   }
 }

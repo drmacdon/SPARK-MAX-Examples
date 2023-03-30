@@ -282,6 +282,19 @@
                 }
               ]
             }
+          },
+          "9,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Toggle Button",
+              "_source0": "network_table:///SmartDashboard/RUN",
+              "_title": "RUN",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
           }
         }
       }
@@ -301,9 +314,9 @@
     }
   ],
   "windowGeometry": {
-    "x": -1964.0,
-    "y": 72.0,
-    "width": 1761.0,
+    "x": 0.0,
+    "y": 38.0,
+    "width": 1728.0,
     "height": 930.0
   }
 }
