@@ -56,6 +56,15 @@ public class Robot extends TimedRobot {
   private RelativeEncoder m_encoder;
   public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput, maxRPM, maxVel, minVel, maxAcc, allowedErr;
 
+  public int smartCurrentLimit = 20;
+  public double positionConversionFactor;
+  public double velocityConversionFactor;
+
+  public boolean enableForwardLimit = true;
+  public boolean enableBackwardLimit = true;
+  public float forwardLimit = 0.1f;
+  public float backwardLimit = 0.0f;
+
   @Override
   public void robotInit() {
     // initialize motor
@@ -81,6 +90,10 @@ public class Robot extends TimedRobot {
     kMaxOutput = 1; 
     kMinOutput = -1;
     maxRPM = 5700;
+
+    m_motor.setSmartCurrentLimit(smartCurrentLimit);
+    positionConversionFactor = m_encoder.getPositionConversionFactor();
+    velocityConversionFactor = m_encoder.getVelocityConversionFactor();
 
     // Smart Motion Coefficients
     maxVel = 2000; // rpm
@@ -121,6 +134,20 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Max Output", kMaxOutput);
     SmartDashboard.putNumber("Min Output", kMinOutput);
 
+    SmartDashboard.putNumber("Motor Smart Current Limit", smartCurrentLimit);
+    SmartDashboard.putNumber("Position Conversion Factor", positionConversionFactor);
+    SmartDashboard.putNumber("Velocity Conversion Factor", velocityConversionFactor);
+
+    SmartDashboard.putBoolean("Enable Forward Limit", enableForwardLimit);
+    SmartDashboard.putBoolean("Enable Backward Limit", enableBackwardLimit);
+    SmartDashboard.putNumber("Forward Limit", forwardLimit);
+    SmartDashboard.putNumber("Backward Limit", backwardLimit);
+
+    m_motor.enableSoftLimit(CANSparkMax.SoftLimitDirection.kForward, enableForwardLimit);
+    m_motor.enableSoftLimit(CANSparkMax.SoftLimitDirection.kReverse, enableBackwardLimit);
+    m_motor.setSoftLimit(CANSparkMax.SoftLimitDirection.kForward, forwardLimit);
+    m_motor.setSoftLimit(CANSparkMax.SoftLimitDirection.kReverse, backwardLimit);
+
     // display Smart Motion coefficients
     SmartDashboard.putNumber("Max Velocity", maxVel);
     SmartDashboard.putNumber("Min Velocity", minVel);
@@ -128,6 +155,8 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Allowed Closed Loop Error", allowedErr);
     SmartDashboard.putNumber("Set Position", 0);
     SmartDashboard.putNumber("Set Velocity", 0);
+
+    SmartDashboard.putNumber("CAN ID", deviceID);
 
     // button to toggle between velocity and smart motion modes
     SmartDashboard.putBoolean("Mode", true);
@@ -147,6 +176,49 @@ public class Robot extends TimedRobot {
     double minV = SmartDashboard.getNumber("Min Velocity", 0);
     double maxA = SmartDashboard.getNumber("Max Acceleration", 0);
     double allE = SmartDashboard.getNumber("Allowed Closed Loop Error", 0);
+
+    int currentLimit = (int)SmartDashboard.getNumber("Motor Smart Current Limit", 20);
+    double posConvFactor = SmartDashboard.getNumber("Position Conversion Factor", 1);
+    double velConvFactor = SmartDashboard.getNumber("Velocity Conversion Factor", 1);
+    boolean dashEnableForward = SmartDashboard.getBoolean("Enable Forward Limit", true);
+    boolean dashEnableBackward = SmartDashboard.getBoolean("Enable Backward Limit", true);
+    float dashForwardLimit = (float)SmartDashboard.getNumber("Forward Limit", 0.1f);
+    float dashBackwardLimit = (float)SmartDashboard.getNumber("Backward Limit", 0.0f);
+
+    if (currentLimit != smartCurrentLimit) {
+      m_motor.setSmartCurrentLimit(currentLimit);
+      smartCurrentLimit = currentLimit;
+    }
+
+    if (posConvFactor != positionConversionFactor) {
+      m_encoder.setPositionConversionFactor(posConvFactor);
+      positionConversionFactor = posConvFactor;
+    }
+
+    if (velConvFactor != velocityConversionFactor) {
+      m_encoder.setVelocityConversionFactor(velConvFactor);
+      velocityConversionFactor = velConvFactor;
+    }
+
+    if (dashEnableForward != enableForwardLimit) {
+      m_motor.enableSoftLimit(CANSparkMax.SoftLimitDirection.kForward, dashEnableForward);
+      enableForwardLimit = dashEnableForward;
+    }
+
+    if (dashEnableBackward != enableBackwardLimit) {
+      m_motor.enableSoftLimit(CANSparkMax.SoftLimitDirection.kReverse, dashEnableBackward);
+      enableBackwardLimit = dashEnableBackward;
+    }
+
+    if (dashForwardLimit != forwardLimit) {
+      m_motor.setSoftLimit(CANSparkMax.SoftLimitDirection.kForward, dashForwardLimit);
+      forwardLimit = dashForwardLimit;
+    }
+
+    if (dashBackwardLimit != backwardLimit) {
+      m_motor.setSoftLimit(CANSparkMax.SoftLimitDirection.kReverse, dashBackwardLimit);
+      backwardLimit = dashBackwardLimit;
+    }
 
     // if PID coefficients on SmartDashboard have changed, write new values to controller
     if((p != kP)) { m_pidController.setP(p); kP = p; }
